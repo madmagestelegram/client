@@ -1,0 +1,21 @@
+{
+  "name": "madmagestelegram/client",
+  "type": "library",
+  "description": "Telegram bot client",
+  "keywords": [
+    "telegram",
+    "bot",
+    "rpc"
+  ],
+  "license": "MIT",
+  "require": {
+    "php": "^7.2",
+    "madmagestelegram/types": "^0",
+    "guzzlehttp/guzzle": "^6.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "MadmagesTelegram\\Client\\": "src/"
+    }
+  }
+}
