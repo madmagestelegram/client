@@ -1,4 +1,6 @@
-<?php declare( strict_types=1 );
+<?php
+
+declare(strict_types=1);
 
 namespace MadmagesTelegram\Client;
 
@@ -25,14 +27,22 @@ class Client extends TypedClient
     /** @var string */
     private $token;
 
-    public function __construct(string $token, array $guzzleConfigs = [])
+    public function __construct(string $token, GuzzleClient $guzzle = null)
     {
         $this->apiEndpoint = self::API_URL . "bot{$token}/";
-        $this->guzzle = new GuzzleClient($guzzleConfigs);
+        $this->guzzle = $guzzle ?? new GuzzleClient();
         $this->token = $token;
     }
 
-    public function validateLoginData(array $data):bool {
+    /**
+     * Validate login widget data
+     *
+     * @param array $data
+     * @return bool
+     * @throws ApiException
+     */
+    public function validateLoginData(array $data): bool
+    {
         if (!isset($data['hash'])) {
             throw new ApiException('Hash key not found');
         }
@@ -56,8 +66,8 @@ class Client extends TypedClient
      * Should return json string
      *
      * @param string $method
-     * @param array  $parameters
-     * @param bool   $withFiles
+     * @param array $parameters
+     * @param bool $withFiles
      * @return string Returned json string
      * @throws Throwable
      */
@@ -67,7 +77,7 @@ class Client extends TypedClient
             $multipart = [];
             foreach ($parameters as $key => $value) {
                 $multipart[] = [
-                    'name'     => $key,
+                    'name' => $key,
                     'contents' => $value,
                 ];
             }
