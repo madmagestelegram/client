@@ -71,7 +71,7 @@ class Client extends TypedClient
      * @return string Returned json string
      * @throws Throwable
      */
-    public function _rawApiCall(string $method, array $parameters, bool $withFiles = false): string
+    protected function _rawApiCall(string $method, array $parameters, bool $withFiles = false): string
     {
         if ($withFiles) {
             $multipart = [];
