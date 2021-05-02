@@ -11,7 +11,7 @@
   "require": {
     "php": "^7.2",
     "madmagestelegram/types": "^0",
-    "guzzlehttp/guzzle": "^6.0"
+    "guzzlehttp/guzzle": "^7"
   },
   "autoload": {
     "psr-4": {
