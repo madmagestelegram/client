@@ -9,9 +9,10 @@
   ],
   "license": "MIT",
   "require": {
-    "php": "^7.2",
-    "madmagestelegram/types": "^0",
-    "guzzlehttp/guzzle": "^7"
+    "php": "^7.4 | ^8",
+    "madmagestelegram/types": "*",
+    "guzzlehttp/guzzle": "^7",
+    "ext-json": "*"
   },
   "autoload": {
     "psr-4": {

@@ -6,32 +6,31 @@ namespace MadmagesTelegram\Client;
 
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Utils;
 use InvalidArgumentException;
-use MadmagesTelegram\Client\Exception\ApiException;
 use MadmagesTelegram\Client\Exception\ResponseException;
 use MadmagesTelegram\Types\TypedClient;
 use Throwable;
-
-use function GuzzleHttp\json_decode as jsonDecode;
-use function GuzzleHttp\json_encode as jsonEncode;
 
 class Client extends TypedClient
 {
 
     private const API_URL = 'https://api.telegram.org/';
 
-    /** @var string */
-    private $apiEndpoint;
-    /** @var GuzzleClient */
-    private $guzzle;
-    /** @var string */
-    private $token;
+    private string $apiEndpoint;
+    private GuzzleClient $guzzle;
+    private string $token;
 
     public function __construct(string $token, GuzzleClient $guzzle = null)
     {
-        $this->apiEndpoint = self::API_URL . "bot{$token}/";
+        $this->apiEndpoint = $this->getApiEndpoint($token);
         $this->guzzle = $guzzle ?? new GuzzleClient();
         $this->token = $token;
+    }
+
+    private function getApiEndpoint(string $token): string
+    {
+        return self::API_URL . "bot{$token}/";
     }
 
     /**
@@ -39,13 +38,14 @@ class Client extends TypedClient
      *
      * @param array $data
      * @return bool
-     * @throws ApiException
+     * @throws InvalidArgumentException
      */
     public function validateLoginData(array $data): bool
     {
         if (!isset($data['hash'])) {
-            throw new ApiException('Hash key not found');
+            throw new InvalidArgumentException('Hash key not found');
         }
+
         $hash = $data['hash'];
         unset($data['hash']);
 
@@ -53,6 +53,7 @@ class Client extends TypedClient
         foreach ($data as $key => $value) {
             $dataCheckArray[] = $key . '=' . $value;
         }
+
         sort($dataCheckArray);
         $checkString = implode("\n", $dataCheckArray);
         $secretKey = hash('sha256', $this->token, true);
@@ -67,12 +68,20 @@ class Client extends TypedClient
      *
      * @param string $method
      * @param array $parameters
-     * @param bool $withFiles
      * @return string Returned json string
      * @throws Throwable
      */
-    public function _apiCall(string $method, array $parameters, bool $withFiles = false): string
+    public function _apiCall(string $method, array $parameters): string
     {
+        $withFiles = false;
+        array_walk_recursive($parameters, function ($item) use (&$withFiles) {
+            if ($withFiles) {
+                return;
+            }
+
+            $withFiles = is_resource($item);
+        });
+
         if ($withFiles) {
             $multipart = [];
             foreach ($parameters as $key => $value) {
@@ -96,12 +105,12 @@ class Client extends TypedClient
 
             $responseBody = (string)$response->getBody();
             try {
-                $decoded = jsonDecode($responseBody, true);
-            } catch (InvalidArgumentException $ex) {
+                $decoded = Utils::jsonDecode($responseBody, true);
+            } catch (Throwable $ex) {
                 throw $exception;
             }
 
-            throw ExceptionMaker::make($decoded, $exception);
+            throw ExceptionResolver::resolve($decoded, $exception);
         }
 
         $resultContent = $result->getBody()->getContents();
@@ -110,9 +119,13 @@ class Client extends TypedClient
         }
 
         try {
-            $result = jsonDecode($resultContent, true);
+            $result = Utils::jsonDecode($resultContent, true);
         } catch (InvalidArgumentException $exception) {
-            throw new ResponseException($exception->getMessage() . "\n" . print_r($result, true), $exception->getCode(), $exception);
+            throw new ResponseException(
+                $exception->getMessage() . "\n" . print_r($result, true),
+                $exception->getCode(),
+                $exception
+            );
         }
 
         if (!isset($result['ok'], $result['result'])) {
@@ -120,7 +133,7 @@ class Client extends TypedClient
         }
 
         try {
-            return jsonEncode($result['result']);
+            return Utils::jsonEncode($result['result']);
         } catch (InvalidArgumentException $exception) {
             throw new ResponseException($exception->getMessage(), $exception->getCode(), $exception);
         }
