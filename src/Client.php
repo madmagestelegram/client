@@ -63,6 +63,38 @@ class Client extends TypedClient
     }
 
     /**
+     * Validate web app initData
+     *
+     * @param string $initData
+     * @return bool|null
+     * @throws InvalidArgumentException
+     */
+    public function validateWebAppData(string $initData): bool
+    {
+        parse_str(urldecode($initData), $parsedData);
+        if (!is_array($parsedData) || !isset($parsedData['hash'])) {
+            throw new InvalidArgumentException('Invalid initData string');
+        }
+
+        $requestedHash = $parsedData['hash'];
+        unset($parsedData['hash']);
+
+        $dataCheckArray = [];
+        foreach ($parsedData as $key => $value) {
+            $dataCheckArray[] = $key . '=' . $value;
+        }
+
+        sort($dataCheckArray);
+        $hex = hash_hmac(
+            'sha256',
+            implode("\n", $dataCheckArray),
+            hash_hmac('sha256', $this->token, 'WebAppData', true),
+        );
+
+        return strcmp($requestedHash, $hex) === 0;
+    }
+
+    /**
      * Real request engine
      * Should return json string
      *
